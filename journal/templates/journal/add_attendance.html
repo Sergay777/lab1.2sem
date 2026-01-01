@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Добавить посещаемость{% endblock %}
+{% block content %}
+<h2>Добавить отметку посещаемости</h2>
+
+{% if form.errors %}
+    <div class="alert alert-danger">
+        <strong>Ошибка!</strong> Пожалуйста, исправьте следующие ошибки:
+        <ul>
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    
+    <div style="margin-bottom: 15px;">
+        <label for="{{ form.student.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold;">
+            {{ form.student.label }}:
+        </label>
+        {{ form.student }}
+        {% if form.student.errors %}
+            <div style="color: #dc3545; font-size: 14px; margin-top: 5px;">
+                {{ form.student.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+        <label for="{{ form.date.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold;">
+            {{ form.date.label }}:
+        </label>
+        {{ form.date }}
+        <small style="display: block; color: #6c757d; margin-top: 5px;">Формат: ГГГГ-ММ-ДД (например: 2024-12-01)</small>
+        {% if form.date.errors %}
+            <div style="color: #dc3545; font-size: 14px; margin-top: 5px;">
+                {{ form.date.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <label for="{{ form.present.id_for_label }}" style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+            {{ form.present }}
+            {{ form.present.label }}
+        </label>
+        {% if form.present.errors %}
+            <div style="color: #dc3545; font-size: 14px; margin-top: 5px;">
+                {{ form.present.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <button type="submit" style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+        Добавить запись
+    </button>
+</form>
+{% endblock %}

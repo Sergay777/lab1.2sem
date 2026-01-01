@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Статистика по группам{% endblock %}
+
+{% block content %}
+<h2>Статистика посещаемости по группам</h2>
+
+{% if stats %}
+    <table border="1" cellpadding="8">
+        <thead>
+            <tr>
+                <th>Группа</th>
+                <th>Количество студентов</th>
+                <th>Количество присутствий</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for group in stats %}
+            <tr>
+                <td>{{ group.name }}</td>
+                <td>{{ group.student_count }}</td>
+                <td>{{ group.present_count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>Нет данных о группах.</p>
+{% endif %}
+{% endblock %}

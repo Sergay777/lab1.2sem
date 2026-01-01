@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Статистика посещаемости{% endblock %}
+
+{% block content %}
+<h2>Статистика посещаемости по студентам</h2>
+
+{% if stats %}
+    <table border="1" cellpadding="8" style="border-collapse: collapse; width: 100%;">
+        <thead>
+            <tr>
+                <th>Студент</th>
+                <th>Группа</th>
+                <th>Всего занятий</th>
+                <th>Пропусков</th>
+                <th>Посещаемость %</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in stats %}
+            <tr>
+                <td>{{ student.name }}</td>
+                <td>{{ student.group.name }}</td>
+                <td>{{ student.total }}</td>
+                <td>{{ student.absences }}</td>
+                <td>
+                    {% if student.total > 0 %}
+                        {{ student.attendance_percent }}%
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>Нет данных для отображения.</p>
+{% endif %}
+{% endblock %}

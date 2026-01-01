@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Мой профиль – Электронный журнал{% endblock title %}
+{% block content %}
+<h2 class="mb-4">Мой профиль</h2>
+<div class="card" style="max-width: 500px;">
+    <div class="card-body">
+        <p><strong>ФИО:</strong> {{ student.last_name }} {{ student.first_name }}</p>
+        <p><strong>Логин:</strong> {{ student.user.username }}</p>
+        <p><strong>Email:</strong> {{ student.user.email }}</p>
+        <p><strong>Группа:</strong> {{ student.id_group.name }}</p>
+    </div>
+</div>
+{% endblock content %}

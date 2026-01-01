@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель преподавателя{% endblock %}
+
+{% block content %}
+<h2>Панель преподавателя</h2>
+<p>Добро пожаловать, {{ user.username }}!</p>
+<ul>
+    <li><a href="{% url 'attendance_add' %}">Добавить посещаемость</a></li>
+    <li><a href="#">Просмотреть все записи</a></li>  <!-- пока заглушка -->
+</ul>
+{% endblock %}

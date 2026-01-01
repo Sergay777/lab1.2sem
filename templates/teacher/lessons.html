@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}
+    {% if group %}Занятия {{ group.name }} {% else %}Мои занятия{% endif %} – Электронный журнал
+{% endblock title %}
+{% block content %}
+<h2 class="mb-4">
+    {% if group %}Занятия группы {{ group.name }} {% else %}Мои занятия{% endif %}
+</h2>
+
+<!-- Форма фильтрации -->
+<form method="get" action="" class="mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            {{ filter_form.date.label_tag }}
+            {{ filter_form.date }}
+        </div>
+        <div class="col-md-3">
+            {{ filter_form.subject.label_tag }}
+            {{ filter_form.subject }}
+        </div>
+        <div class="col-md-3">
+            {{ filter_form.group.label_tag }}
+            {{ filter_form.group }}
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary w-100">Применить фильтр</button>
+            <a href="{% if group %}{% url 'teacher-group-lessons' group.id %}{% else %}{% url 'teacher-lessons-all' %}{% endif %}" 
+               class="btn btn-secondary w-100 mt-2">
+                Сбросить
+            </a>
+        </div>
+    </div>
+</form>
+
+<!-- Таблица занятий -->
+<table class="table table-striped table-bordered align-middle">
+    <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Предмет</th>
+            <th>Группа</th>
+            <th>Тип</th>
+            <th>Преподаватель</th>
+            <th style="width: 15%">Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for lesson in lessons %}
+        <tr>
+            <td>{{ lesson.date }}</td>
+            <td>{{ lesson.id_subject.name }}</td>
+            <td>{{ lesson.id_group.name }}</td>
+            <td>{{ lesson.type.name }}</td>
+            <td>{{ lesson.id_teacher.user.get_full_name|default:lesson.id_teacher.user.username }}</td>
+            <td>
+                <a href="{% url 'teacher-lesson-attendance' lesson.id %}" class="btn btn-sm btn-outline-primary">
+                    Посещаемость
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center text-muted">Нет данных о занятиях.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Пагинация -->
+{% if is_paginated %}
+<nav aria-label="Страницы">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filter_params %}&{{ filter_params }}{% endif %}">
+                &laquo; Предыдущая
+            </a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if filter_params %}&{{ filter_params }}{% endif %}">
+                {{ num }}
+            </a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filter_params %}&{{ filter_params }}{% endif %}">
+                Следующая &raquo;
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock content %}

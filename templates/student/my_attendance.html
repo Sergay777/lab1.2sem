@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Моя посещаемость – Электронный журнал{% endblock title %}
+{% block content %}
+<h2 class="mb-4">Моя посещаемость</h2>
+
+<!-- Форма фильтрации -->
+<form method="get" action="" class="mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            {{ filter_form.date.label_tag }}
+            {{ filter_form.date }}
+        </div>
+        <div class="col-md-3">
+            {{ filter_form.subject.label_tag }}
+            {{ filter_form.subject }}
+        </div>
+        <div class="col-md-3">
+            {{ filter_form.teacher.label_tag }}
+            {{ filter_form.teacher }}
+        </div>
+        <div class="col-md-3">
+            {{ filter_form.status.label_tag }}
+            {{ filter_form.status }}
+        </div>
+        <div class="col-md-12 mt-2">
+            <button type="submit" class="btn btn-primary">Применить фильтр</button>
+            <a href="{% url 'student-attendance' %}" class="btn btn-secondary">Сбросить</a>
+        </div>
+    </div>
+</form>
+
+<!-- Таблица посещаемости -->
+<table class="table table-bordered align-middle">
+    <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Предмет</th>
+            <th>Тип</th>
+            <th>Преподаватель</th>
+            <th>Статус</th>
+            <th>Группа</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for att in attendances %}
+        <tr>
+            <td>{{ att.id_lesson.date|date:"d.m.Y" }}</td>
+            <td>{{ att.id_lesson.id_subject.name }}</td>
+            <td>{{ att.id_lesson.type.name }}</td>
+            <td>{{ att.id_lesson.id_teacher.user.get_full_name|default:att.id_lesson.id_teacher.user.username }}</td>
+            <td>
+                <span class="badge {% if att.status.name == 'Присутствовал' %}bg-success{% elif att.status.name == 'Отсутствовал' %}bg-danger{% else %}bg-warning{% endif %}">
+                    {{ att.status.name }}
+                </span>
+            </td>
+            <td>{{ att.id_lesson.id_group.name }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center text-muted">Данные о посещаемости отсутствуют.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Пагинация -->
+{% if is_paginated %}
+<nav aria-label="Страницы">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filter_params %}&{{ filter_params }}{% endif %}">
+                &laquo; Предыдущая
+            </a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if filter_params %}&{{ filter_params }}{% endif %}">
+                {{ num }}
+            </a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filter_params %}&{{ filter_params }}{% endif %}">
+                Следующая &raquo;
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock content %}
