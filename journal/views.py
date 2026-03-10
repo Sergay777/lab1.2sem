@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponse
 from .forms import AttendanceForm
+import requests
+from datetime import datetime
 from .filters import (  # <-- ДОБАВЛЕНО: импорт форм фильтрации
     LessonFilterForm,
     StudentFilterForm,
@@ -16,6 +18,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, TemplateView, DetailView
 from django.shortcuts import get_object_or_404
 from .mixins import TeacherRequiredMixin, StudentRequiredMixin
+
+# ===== Импорты для экспорта =====
+import csv
+from django.http import HttpResponse
 
 # ===== ФУНКЦИОНАЛЬНЫЕ ПРЕДСТАВЛЕНИЯ (старые) =====
 
@@ -60,18 +66,129 @@ def teacher_panel(request):
 def attendance_list(request):
     return render(request, 'journal/attendance_list.html', {})
 
+# ===== ФУНКЦИИ ЭКСПОРТА =====
+
+@login_required
+@user_passes_test(lambda u: u.is_teacher)
+def export_students_csv(request, group_id):
+    """Экспорт студентов группы в CSV"""
+    group = get_object_or_404(Group, pk=group_id)
+    students = Student.objects.filter(id_group=group).select_related('user')
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="students_{group.name}.csv"'
+    
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow(['Фамилия', 'Имя', 'Отчество', 'Email', 'Статус'])
+    
+    for student in students:
+        writer.writerow([
+            student.last_name,
+            student.first_name,
+            student.second_name or '',
+            student.user.email,
+            student.status or 'обучается'
+        ])
+    
+    return response
+
+@login_required
+@user_passes_test(lambda u: u.is_teacher)
+def export_attendance_csv(request, lesson_id):
+    """Экспорт посещаемости занятия в CSV"""
+    lesson = get_object_or_404(Lesson, pk=lesson_id)
+    attendances = Attendance.objects.filter(id_lesson=lesson).select_related('id_student', 'status')
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="attendance_{lesson.date}.csv"'
+    
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow(['Фамилия', 'Имя', 'Отчество', 'Статус', 'Примечание'])
+    
+    for att in attendances:
+        writer.writerow([
+            att.id_student.last_name,
+            att.id_student.first_name,
+            att.id_student.second_name or '',
+            att.status.name,
+            att.note or ''
+        ])
+    
+    return response
+
+@login_required
+@user_passes_test(lambda u: u.is_teacher)
+def export_lessons_csv(request):
+    """Экспорт всех занятий преподавателя в CSV"""
+    lessons = Lesson.objects.filter(id_teacher=request.user.teacher).select_related('id_group', 'id_subject', 'type', 'period')
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="my_lessons.csv"'
+    
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow(['Дата', 'Предмет', 'Группа', 'Тип', 'Тема'])
+    
+    for lesson in lessons:
+        writer.writerow([
+            lesson.date,
+            lesson.id_subject.name,
+            lesson.id_group.name,
+            lesson.type.name,
+            lesson.topic or ''
+        ])
+    
+    return response
+
+# ===== ОБНОВЛЕННАЯ ФУНКЦИЯ СТАТИСТИКИ С ДИАГРАММОЙ =====
 @login_required
 def attendance_stats(request):
+    # Получаем все статусы посещаемости
+    present_status = Att_Status.objects.filter(name__icontains='Присут').first()
+    absent_statuses = Att_Status.objects.exclude(name__icontains='Присут')
+    
+    # Аннотируем студентов с подсчетом посещений и пропусков
     stats = Student.objects.annotate(
         total=Count('attendance'),
-        absences=Count('attendance', filter=Q(attendance__present=False))
+        present_count=Count('attendance', filter=Q(attendance__status=present_status.id if present_status else None)),
+        absences=Count('attendance', filter=Q(attendance__status__in=absent_statuses))
     )
+    
+    # Подготовим данные для диаграммы
+    student_names = []
+    attendance_percents = []
+    present_counts = []
+    absent_counts = []
+    
     for student in stats:
         if student.total > 0:
-            student.attendance_percent = round(((student.total - student.absences) / student.total) * 100, 1)
+            percent = round((student.present_count / student.total) * 100, 1)
+            student.attendance_percent = percent
         else:
             student.attendance_percent = 0
-    return render(request, 'journal/stats.html', {'stats': stats})
+        
+        # Добавляем в списки для диаграммы (только топ-10 студентов)
+        if len(student_names) < 10:
+            full_name = f"{student.last_name} {student.first_name[0]}."
+            if student.second_name:
+                full_name += f" {student.second_name[0]}."
+            student_names.append(full_name)
+            attendance_percents.append(student.attendance_percent)
+            present_counts.append(student.present_count)
+            absent_counts.append(student.absences)
+    
+    # Данные для круговой диаграммы (общая статистика)
+    total_present = sum(present_counts)
+    total_absent = sum(absent_counts)
+    
+    context = {
+        'stats': stats,
+        'chart_labels': student_names,
+        'chart_data': attendance_percents,
+        'total_present': total_present,
+        'total_absent': total_absent,
+        'total_students': len(stats)
+    }
+    return render(request, 'journal/stats.html', context)
 
 @login_required
 def my_attendance(request):
@@ -321,3 +438,39 @@ class MyAttendanceView(LoginRequiredMixin, StudentRequiredMixin, ListView):
         context["filter_params"] = query_params.urlencode()
         
         return context
+
+
+def api_women_list(request):
+    """Представление для отображения данных из API"""
+    api_url = 'http://127.0.0.1:8000/api/v1/women/'
+    data = None
+    error = None
+    
+    try:
+        response = requests.get(api_url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            # Преобразуем строку с датой в объект datetime
+            for article in data:
+                if 'time_create' in article:
+                    try:
+                        # Убираем микросекунды и преобразуем
+                        date_str = article['time_create'].split('.')[0]
+                        article['time_create'] = datetime.fromisoformat(date_str)
+                    except:
+                        # Если не получается, оставляем как есть
+                        pass
+        else:
+            error = f'API вернул ошибку: {response.status_code}'
+    except requests.exceptions.ConnectionError:
+        error = 'Не удалось подключиться к API. Убедитесь, что API-сервер запущен на порту 8000.'
+    except requests.exceptions.Timeout:
+        error = 'Превышено время ожидания ответа от API.'
+    except Exception as e:
+        error = f'Ошибка при запросе к API: {str(e)}'
+    
+    context = {
+        'articles': data,
+        'error': error
+    }
+    return render(request, 'journal/api_women.html', context)

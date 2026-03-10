@@ -24,4 +24,8 @@ urlpatterns = [
     # Маршруты для студента (Lab 3)
     path("student/profile/", views.ProfileView.as_view(), name="student-profile"),
     path("student/attendance/", views.MyAttendanceView.as_view(), name="student-attendance"),
+    path('export/students/<int:group_id>/', views.export_students_csv, name='export-students'),
+    path('export/attendance/<int:lesson_id>/', views.export_attendance_csv, name='export-attendance'),
+    path('export/lessons/', views.export_lessons_csv, name='export-lessons'),
+    path('api-women/', views.api_women_list, name='api-women'),
 ]

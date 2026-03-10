@@ -3,9 +3,16 @@
     {% if group %}Занятия {{ group.name }} {% else %}Мои занятия{% endif %} – Электронный журнал
 {% endblock title %}
 {% block content %}
-<h2 class="mb-4">
-    {% if group %}Занятия группы {{ group.name }} {% else %}Мои занятия{% endif %}
-</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+        {% if group %}Занятия группы {{ group.name }} {% else %}Мои занятия{% endif %}
+    </h2>
+    {% if not group %}
+    <a href="{% url 'export-lessons' %}" class="btn btn-success">
+        <i class="bi bi-download"></i> Экспорт всех занятий
+    </a>
+    {% endif %}
+</div>
 
 <!-- Форма фильтрации -->
 <form method="get" action="" class="mb-4">
@@ -47,11 +54,11 @@
     <tbody>
         {% for lesson in lessons %}
         <tr>
-            <td>{{ lesson.date }}</td>
+            <td>{{ lesson.date|date:"d.m.Y" }}</td>
             <td>{{ lesson.id_subject.name }}</td>
             <td>{{ lesson.id_group.name }}</td>
             <td>{{ lesson.type.name }}</td>
-            <td>{{ lesson.id_teacher.user.get_full_name|default:lesson.id_teacher.user.username }}</td>
+            <td>{{ lesson.id_teacher.last_name }} {{ lesson.id_teacher.first_name }}{% if lesson.id_teacher.second_name %} {{ lesson.id_teacher.second_name }}{% endif %}</td>
             <td>
                 <a href="{% url 'teacher-lesson-attendance' lesson.id %}" class="btn btn-sm btn-outline-primary">
                     Посещаемость

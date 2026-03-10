@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Студенты {{ group.name }} – Электронный журнал{% endblock title %}
 {% block content %}
-<h2 class="mb-4">Студенты группы {{ group.name }}</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Студенты группы {{ group.name }}</h2>
+    <a href="{% url 'export-students' group.id %}" class="btn btn-success">
+        <i class="bi bi-download"></i> Экспорт в CSV
+    </a>
+</div>
 
 <!-- Форма фильтрации -->
 <form method="get" action="" class="form-inline mb-3">
@@ -28,7 +33,7 @@
     <tbody>
         {% for student in students %}
         <tr>
-            <td>{{ student.last_name }} {{ student.first_name }}</td>
+            <td>{{ student.last_name }} {{ student.first_name }}{% if student.second_name %} {{ student.second_name }}{% endif %}</td>
             <td>{{ student.user.email }}</td>
         </tr>
         {% empty %}
